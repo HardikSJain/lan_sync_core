@@ -20,6 +20,14 @@ class MessageEnvelope {
     this.payload,
   });
 
+  static const Set<String> reservedKeys = {
+    'type',
+    'deviceId',
+    'timestamp',
+    'msgId',
+    'targetDeviceId',
+  };
+
   final MessageType type;
   final String deviceId;
   final int timestamp;
@@ -28,13 +36,27 @@ class MessageEnvelope {
   final Map<String, dynamic>? payload;
 
   Map<String, dynamic> toJson() {
+    final payload = this.payload;
+    if (payload != null) {
+      final collisions = payload.keys
+          .where(reservedKeys.contains)
+          .toList(growable: false);
+      if (collisions.isNotEmpty) {
+        throw ArgumentError.value(
+          collisions,
+          'payload',
+          'Payload keys cannot override reserved envelope headers.',
+        );
+      }
+    }
+
     return {
       'type': type.wireName,
       'deviceId': deviceId,
       'timestamp': timestamp,
       if (msgId != null) 'msgId': msgId,
       if (targetDeviceId != null) 'targetDeviceId': targetDeviceId,
-      if (payload != null) ...payload!,
+      if (payload != null) ...payload,
     };
   }
 

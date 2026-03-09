@@ -33,6 +33,26 @@ void main() {
       expect(decoded.targetDeviceId, 'device-b');
       expect(decoded.payload?['requestingFullSync'], isTrue);
     });
+
+    test('rejects payload keys that collide with reserved headers', () {
+      final envelope = MessageEnvelope(
+        type: MessageType.syncRequest,
+        deviceId: 'device-a',
+        timestamp: 123,
+        payload: {'type': 'ACK'},
+      );
+
+      expect(
+        () => envelope.toJson(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('reserved envelope headers'),
+          ),
+        ),
+      );
+    });
   });
 
   group('ItemEnvelope', () {
