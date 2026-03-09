@@ -5,6 +5,6 @@
 class LanSyncCore {
   /// Initialize the LAN sync engine.
   LanSyncCore();
-  
+
   // Implementation will be added during development
 }
