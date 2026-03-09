@@ -57,4 +57,9 @@ export 'src/core/device_identity_provider.dart';
 export 'src/core/op_log.dart';
 export 'src/core/sync_config.dart';
 
-// Sync engine and network layer will be exported as they're implemented
+// Protocol layer
+export 'src/network/message_type.dart';
+export 'src/network/message_envelope.dart';
+export 'src/network/message_protocol.dart';
+
+// Sync engine and transport layer will be exported as they're implemented

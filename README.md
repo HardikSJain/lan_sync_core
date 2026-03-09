@@ -33,7 +33,24 @@ Documentation and examples will be added as the package evolves.
 
 ## Status
 
-🚧 **Work in Progress** - Package architecture and API design in progress.
+🚧 **Work in Progress**
+
+Current progress:
+- ✅ Architecture analysis completed
+- ✅ Core interfaces defined
+- ✅ Protocol/message model started
+- ⏳ UDP transport layer next
+
+## Current Scope (v0.1.0)
+
+Focus is on a **UDP-only LAN sync package**:
+- peer discovery
+- full sync
+- chunking/reassembly
+- ACK/retry
+- checksum verification
+
+HTTP bulk sync / edge server will come later after the core UDP path is stable.
 
 ## License
 
