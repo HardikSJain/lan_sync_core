@@ -53,6 +53,68 @@ void main() {
         ),
       );
     });
+
+    test('throws descriptive error for missing or invalid deviceId', () {
+      expect(
+        () => MessageEnvelope.fromJson({
+          'type': 'SYNC_REQUEST',
+          'timestamp': 123,
+        }),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains("deviceId"),
+          ),
+        ),
+      );
+
+      expect(
+        () => MessageEnvelope.fromJson({
+          'type': 'SYNC_REQUEST',
+          'deviceId': 42,
+          'timestamp': 123,
+        }),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains("deviceId"),
+          ),
+        ),
+      );
+    });
+
+    test('throws descriptive error for missing or invalid timestamp', () {
+      expect(
+        () => MessageEnvelope.fromJson({
+          'type': 'SYNC_REQUEST',
+          'deviceId': 'device-a',
+        }),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains("timestamp"),
+          ),
+        ),
+      );
+
+      expect(
+        () => MessageEnvelope.fromJson({
+          'type': 'SYNC_REQUEST',
+          'deviceId': 'device-a',
+          'timestamp': '123',
+        }),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains("timestamp"),
+          ),
+        ),
+      );
+    });
   });
 
   group('ItemEnvelope', () {

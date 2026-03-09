@@ -66,6 +66,20 @@ class MessageEnvelope {
       throw FormatException('Unknown message type: ${json['type']}');
     }
 
+    final rawDeviceId = json['deviceId'];
+    if (rawDeviceId is! String || rawDeviceId.isEmpty) {
+      throw const FormatException(
+        "Missing or invalid 'deviceId' in MessageEnvelope JSON",
+      );
+    }
+
+    final rawTimestamp = json['timestamp'];
+    if (rawTimestamp is! num) {
+      throw const FormatException(
+        "Missing or invalid 'timestamp' in MessageEnvelope JSON",
+      );
+    }
+
     final reservedKeys = <String>{
       'type',
       'deviceId',
@@ -83,8 +97,8 @@ class MessageEnvelope {
 
     return MessageEnvelope(
       type: type,
-      deviceId: json['deviceId'] as String,
-      timestamp: (json['timestamp'] as num).toInt(),
+      deviceId: rawDeviceId,
+      timestamp: rawTimestamp.toInt(),
       msgId: json['msgId'] as String?,
       targetDeviceId: json['targetDeviceId'] as String?,
       payload: payload.isEmpty ? null : payload,
