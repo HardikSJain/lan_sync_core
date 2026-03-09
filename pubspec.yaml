@@ -1,0 +1,15 @@
+name: lan_sync_core
+description: Offline-first multi-device synchronization on local area networks (LAN).
+version: 0.1.0
+repository: https://github.com/HardikSJain/lan_sync_core
+
+environment:
+  sdk: ^3.11.1
+
+# Add regular dependencies here.
+dependencies:
+  # path: ^1.9.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
