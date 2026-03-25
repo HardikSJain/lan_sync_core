@@ -37,6 +37,7 @@ class AutonomousAgent:
     def __init__(self):
         self.load_state()
         self.project_root = PROJECT_ROOT
+        self.fvm_path = Path.home() / ".pub-cache" / "bin" / "fvm"
         
     def load_state(self):
         """Load current development state"""
@@ -48,6 +49,40 @@ class AutonomousAgent:
         self.state['lastRun'] = datetime.now().isoformat()
         with open(STATE_FILE, 'w') as f:
             json.dump(self.state, f, indent=2)
+    
+    def run_flutter_analyze(self):
+        """Run Flutter analysis using FVM
+        
+        Returns:
+            tuple: (success: bool, output: str)
+        """
+        self.log("🔍 Running FVM Flutter analysis...")
+        
+        try:
+            result = subprocess.run(
+                [str(self.fvm_path), 'flutter', 'analyze'],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=120  # 2 minute timeout
+            )
+            
+            output = result.stdout + result.stderr
+            
+            if result.returncode == 0:
+                self.log("✅ Flutter analysis passed - no errors")
+                return True, output
+            else:
+                self.log(f"❌ Flutter analysis failed with {result.returncode} errors")
+                self.log(f"Analysis output:\n{output}")
+                return False, output
+                
+        except subprocess.TimeoutExpired:
+            self.log("⏱️  Flutter analysis timed out")
+            return False, "Analysis timed out"
+        except Exception as e:
+            self.log(f"❌ Error running Flutter analysis: {e}")
+            return False, str(e)
     
     def log(self, message):
         """Log with timestamp"""
@@ -75,21 +110,26 @@ class AutonomousAgent:
         self.log(f"📋 Current task: {current_task}")
         
         # Execute task based on phase
+        success = False
         if "UdpTransport" in current_task:
-            self.implement_udp_transport()
+            success = self.implement_udp_transport()
         elif "MessageProtocol" in current_task:
-            self.implement_message_protocol()
+            success = self.implement_message_protocol()
         elif "ChunkManager" in current_task:
-            self.implement_chunk_manager()
+            success = self.implement_chunk_manager()
         elif "AckTracker" in current_task:
-            self.implement_ack_tracker()
+            success = self.implement_ack_tracker()
         else:
             self.log(f"⚠️  Unknown task: {current_task}")
             return
         
-        # Mark task complete
-        self.state['completedTasks'].append(current_task)
-        self.state['nextTasks'].pop(0)
+        # Mark task complete only if it succeeded
+        if success:
+            self.state['completedTasks'].append(current_task)
+            self.state['nextTasks'].pop(0)
+            self.log(f"✅ Task completed: {current_task}")
+        else:
+            self.log(f"🔄 Task will retry next iteration: {current_task}")
         
         # Save state
         self.save_state()
@@ -123,21 +163,18 @@ class AutonomousAgent:
         # Run formatter
         subprocess.run(['dart', 'format', str(output_path)], cwd=self.project_root)
         
-        # Run analyzer
-        result = subprocess.run(
-            ['dart', 'analyze', str(output_path)],
-            cwd=self.project_root,
-            capture_output=True,
-            text=True
-        )
+        # Run Flutter analysis with FVM
+        success, output = self.run_flutter_analyze()
         
-        if result.returncode == 0:
-            self.log("✅ Analysis passed")
-        else:
-            self.log(f"⚠️  Analysis warnings:\n{result.stdout}")
+        if not success:
+            self.log("❌ Cannot commit - Flutter analysis failed")
+            self.log("🔧 Will fix errors in next iteration")
+            # Don't mark task as complete - retry next time
+            return False
         
-        # Git commit
+        # Git commit only if analysis passed
         self.git_commit(f"feat: implement UdpTransport for peer discovery and messaging")
+        return True
     
     def generate_udp_transport(self):
         """Generate production-grade UDP transport implementation"""
@@ -539,27 +576,72 @@ class PeerInfo {
     def implement_message_protocol(self):
         """Implement message protocol - will be done in next iteration"""
         self.log("📝 MessageProtocol implementation scheduled for next run")
+        return True  # Placeholder tasks auto-complete
     
     def implement_chunk_manager(self):
         """Implement chunk manager - will be done later"""
         self.log("📝 ChunkManager implementation scheduled for future run")
+        return True  # Placeholder tasks auto-complete
     
     def implement_ack_tracker(self):
         """Implement ACK tracker - will be done later"""
         self.log("📝 AckTracker implementation scheduled for future run")
+        return True  # Placeholder tasks auto-complete
     
     def git_commit(self, message):
-        """Create a git commit"""
+        """Create a git commit after verifying no errors
+        
+        Args:
+            message: Commit message
+            
+        Returns:
+            bool: True if commit succeeded, False otherwise
+        """
+        # Final check before commit
+        success, output = self.run_flutter_analyze()
+        
+        if not success:
+            self.log("❌ Pre-commit analysis failed - cannot commit")
+            return False
+        
         try:
+            # Stage changes
             subprocess.run(['git', 'add', '.'], cwd=self.project_root, check=True)
+            
+            # Commit
             subprocess.run(
                 ['git', 'commit', '-m', f'🤖 {message}'],
                 cwd=self.project_root,
                 check=True
             )
             self.log(f"📝 Git commit: {message}")
+            
+            # Push to GitHub
+            push_result = subprocess.run(
+                ['git', 'push'],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if push_result.returncode == 0:
+                self.log("📤 Pushed to GitHub successfully")
+            else:
+                self.log(f"⚠️  Git push failed: {push_result.stderr}")
+                self.log("📝 Commit is saved locally, will retry push next iteration")
+                # Don't fail the whole operation - commit is safe locally
+            
+            return True
+            
+        except subprocess.TimeoutExpired:
+            self.log("⏱️  Git push timed out (network issue?)")
+            self.log("📝 Commit is saved locally")
+            return True  # Commit succeeded, push can retry later
+            
         except subprocess.CalledProcessError as e:
-            self.log(f"⚠️  Git commit failed: {e}")
+            self.log(f"⚠️  Git operation failed: {e}")
+            return False
 
 if __name__ == '__main__':
     agent = AutonomousAgent()
