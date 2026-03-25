@@ -39,8 +39,8 @@ Cron job wrapper that:
 
 **Start:** 2026-03-26 01:34 AM IST  
 **End:** 2026-03-26 07:00 AM IST  
-**Frequency:** Every 30 minutes  
-**Total sessions:** ~11 sessions
+**Frequency:** Every 15 minutes ⚡  
+**Total sessions:** ~20 sessions
 
 ## Development Philosophy
 
