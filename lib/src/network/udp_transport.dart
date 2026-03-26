@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'message_envelope.dart';
 import 'message_type.dart';
+import '../monitoring/peer_tracker.dart' show PeerInfo;
 
 /// Configuration for UDP transport
 class UdpTransportConfig {
@@ -386,17 +387,4 @@ class UdpMessage {
   });
 }
 
-/// Represents information about a discovered peer
-class PeerInfo {
-  final String deviceId;
-  final InternetAddress address;
-  final int port;
-  final DateTime lastSeen;
-
-  const PeerInfo({
-    required this.deviceId,
-    required this.address,
-    required this.port,
-    required this.lastSeen,
-  });
-}
+// PeerInfo is imported from ../monitoring/peer_tracker.dart

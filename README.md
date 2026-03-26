@@ -33,24 +33,43 @@ Documentation and examples will be added as the package evolves.
 
 ## Status
 
-🚧 **Work in Progress**
+### Phase 2: Network Layer ✅ (Complete)
 
 Current progress:
-- ✅ Architecture analysis completed
-- ✅ Core interfaces defined
-- ✅ Protocol/message model started
-- ⏳ UDP transport layer next
+- ✅ Phase 1: Core interfaces and abstractions
+- ✅ Phase 2: Network layer (UDP transport, chunking, ACKs, monitoring)
+- ⏳ Phase 3: Sync coordination (in progress)
+- ⏳ Phase 4: Default implementations
+- ⏳ Phase 5: Documentation and examples
 
-## Current Scope (v0.1.0)
+### Implemented Components (v0.1.0-dev)
 
-Focus is on a **UDP-only LAN sync package**:
-- peer discovery
-- full sync
-- chunking/reassembly
-- ACK/retry
-- checksum verification
+**Core Abstractions:**
+- `SyncItem` - Interface for synchronized objects
+- `SyncStorageAdapter` - Database integration interface
+- `SyncSerializer` - JSON serialization interface
+- `SyncEventHandler` - Event callback interface
+- `DeviceIdentityProvider` - Device identification interface
+- `OpLogEntry` - Operation log structure
 
-HTTP bulk sync / edge server will come later after the core UDP path is stable.
+**Network Layer:**
+- `UdpTransport` - UDP socket management, peer discovery (broadcast/unicast/multicast)
+- `ChunkManager` - Large payload splitting and reassembly (MD5 checksums)
+- `AckTracker` - Reliable delivery with retries and exponential backoff
+- `MessageEnvelope` - Wire protocol message wrapper
+- `MessageProtocol` - Message type definitions
+
+**Monitoring:**
+- `PeerTracker` - Active peer management with heartbeat monitoring
+- `RateLimiter` - Token bucket rate limiting
+- `NetworkHealthMonitor` - Health scoring and performance tracking
+
+### Next: Phase 3 - Sync Coordination
+
+- Sync state machine and coordination
+- Conflict resolution
+- Default implementations (FileOpLog, FileDeviceIdentity)
+- Full end-to-end sync flow
 
 ## License
 
