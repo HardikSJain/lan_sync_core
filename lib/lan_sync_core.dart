@@ -76,6 +76,11 @@ export 'src/monitoring/network_health_monitor.dart';
 export 'src/sync/conflict_resolver.dart';
 export 'src/sync/sync_coordinator.dart';
 export 'src/sync/sync_messages.dart';
+export 'src/sync/cursor_storage.dart';
+export 'src/sync/message_router.dart';
+
+// Sync engine (Phase 4A - High-level API)
+export 'src/sync/sync_engine.dart';
 
 // Default implementations
 export 'src/defaults/file_device_identity.dart';

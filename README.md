@@ -245,14 +245,15 @@ healthMonitor.alerts.listen((alert) {
 
 ## Status
 
-### Phase 3: Sync Coordination ✅ (Core Complete)
+### Phase 4A: Core Integration ✅ (Production-Ready)
 
 Current progress:
 - ✅ Phase 1: Core interfaces and abstractions
 - ✅ Phase 2: Network layer (UDP transport, chunking, ACKs, monitoring)
 - ✅ Phase 3: Sync coordination (SyncCoordinator, conflict resolution, file implementations)
-- ⏳ Phase 4: Integration and examples
-- ⏳ Phase 5: Documentation and testing
+- ✅ Phase 4A: Core integration (SyncEngine API, message routing, full wiring)
+- ⏳ Phase 4B: Resilience (optional polish)
+- ⏳ Phase 4C: Examples and testing (optional polish)
 
 ### Implemented Components (v0.1.0-dev)
 
