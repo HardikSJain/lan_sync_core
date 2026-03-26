@@ -39,7 +39,7 @@ class UdpTransportConfig {
     this.enableMulticast = true,
     this.multicastAddress = '224.0.0.251', // mDNS multicast group
     this.maxPacketSize = 65000, // Leave room for UDP header
-    this.socketTimeout = const Duration(seconds = 5),
+    this.socketTimeout = const Duration(seconds: 5),
     this.maxRetries = 3,
   });
 }
@@ -329,7 +329,7 @@ class UdpTransport {
       if (message.type == MessageType.announcement) {
         _peerController.add(
           PeerInfo(
-            deviceId: message.senderId,
+            deviceId: message.deviceId,
             address: datagram.address,
             port: datagram.port,
             lastSeen: DateTime.now(),
@@ -397,6 +397,6 @@ class PeerInfo {
     required this.deviceId,
     required this.address,
     required this.port,
-    required this.receivedAt,
+    required this.lastSeen,
   });
 }
