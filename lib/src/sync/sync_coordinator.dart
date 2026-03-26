@@ -66,7 +66,7 @@ class SyncCoordinator<T extends SyncItem> {
   Stream<SyncEvent> get events => _eventController.stream;
 
   /// Current sync status
-  SyncStatus _status = SyncStatus.idle;
+  final SyncStatus _status = SyncStatus.idle;
 
   SyncCoordinator({
     required this.storage,
