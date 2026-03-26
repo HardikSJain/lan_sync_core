@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../core/device_identity_provider.dart';
 import '../core/op_log.dart';
 import '../core/sync_event_handler.dart';
 import '../core/sync_item.dart';
@@ -55,6 +56,8 @@ class SyncCoordinator<T extends SyncItem> {
   final OpLogAdapter opLog;
   final SyncEventHandler eventHandler;
   final ConflictResolver<T> conflictResolver;
+  final DeviceIdentityProvider deviceIdentity;
+  final PeerTracker peerTracker;
 
   /// Active sync sessions (peer device ID → sync state)
   final Map<String, _SyncSession> _activeSessions = {};
@@ -75,6 +78,8 @@ class SyncCoordinator<T extends SyncItem> {
     required this.opLog,
     required this.eventHandler,
     required this.conflictResolver,
+    required this.deviceIdentity,
+    required this.peerTracker,
   });
 
   /// Initiate sync with a peer.
@@ -407,16 +412,17 @@ class SyncCoordinator<T extends SyncItem> {
 
   /// Get our device ID.
   Future<String> _getOurDeviceId() async {
-    // This should come from device identity provider
-    // For now, use a placeholder
-    return 'our-device-id';
+    return deviceIdentity.getDeviceId();
   }
 
   /// Find a peer by device ID.
   Future<PeerInfo?> _findPeerById(String peerId) async {
-    // This should query the peer tracker
-    // For now, return null (will be wired up in SyncEngine)
-    return null;
+    return peerTracker.getPeer(peerId);
+  }
+
+  /// Get all active peers.
+  List<PeerInfo> getActivePeers() {
+    return peerTracker.getActivePeers();
   }
 
   /// Get entity type from generic type.
