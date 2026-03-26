@@ -103,6 +103,13 @@ class SyncEngine<T extends SyncItem> {
   // Event stream
   final _eventController = StreamController<SyncEngineEvent>.broadcast();
 
+  // Error recovery and circuit breaker
+  final Map<String, int> _failureCount = {};
+  final Map<String, DateTime> _lastFailure = {};
+  final Map<String, DateTime> _lastSuccess = {};
+  final Map<String, int> _totalSyncAttempts = {};
+  final Map<String, int> _totalSyncSuccess = {};
+
   /// Stream of sync engine events.
   Stream<SyncEngineEvent> get events => _eventController.stream;
 
@@ -238,6 +245,11 @@ class SyncEngine<T extends SyncItem> {
         error: event.error,
       );
     });
+
+    // 9. Wire peer tracker events for auto-reconnection
+    _peerTracker.peerEvents.listen((event) {
+      _handlePeerEvent(event);
+    });
   }
 
   /// Start the sync engine.
@@ -336,9 +348,20 @@ class SyncEngine<T extends SyncItem> {
   /// Sync with a specific peer.
   ///
   /// Returns true if sync was initiated successfully.
+  /// Uses circuit breaker pattern to avoid hammering failing peers.
   Future<bool> syncWithPeer(String peerId) async {
     if (!_isStarted) {
       throw StateError('SyncEngine not started');
+    }
+
+    // Check circuit breaker
+    if (_isCircuitOpen(peerId)) {
+      _emitEvent(
+        SyncEngineEventType.syncSkipped,
+        peerId: peerId,
+        error: 'Circuit breaker open (too many failures)',
+      );
+      return false;
     }
 
     final peer = _peerTracker.getPeer(peerId);
@@ -351,15 +374,21 @@ class SyncEngine<T extends SyncItem> {
       return false;
     }
 
+    // Track attempt
+    _totalSyncAttempts[peerId] = (_totalSyncAttempts[peerId] ?? 0) + 1;
+
     try {
       final result = await _coordinator.syncWithPeer(peer);
-      return result.success;
+
+      if (result.success) {
+        _recordSuccess(peerId);
+        return true;
+      } else {
+        _recordFailure(peerId, result.error ?? 'Unknown error');
+        return false;
+      }
     } catch (e) {
-      _emitEvent(
-        SyncEngineEventType.syncFailed,
-        peerId: peerId,
-        error: e.toString(),
-      );
+      _recordFailure(peerId, e.toString());
       return false;
     }
   }
@@ -382,6 +411,49 @@ class SyncEngine<T extends SyncItem> {
 
   /// Get number of active peers.
   int get activePeerCount => _peerTracker.activePeerCount;
+
+  /// Get sync metrics for a peer.
+  SyncMetrics? getMetricsForPeer(String peerId) {
+    final attempts = _totalSyncAttempts[peerId] ?? 0;
+    final success = _totalSyncSuccess[peerId] ?? 0;
+    final failures = _failureCount[peerId] ?? 0;
+    final lastSuccess = _lastSuccess[peerId];
+    final lastFailure = _lastFailure[peerId];
+
+    if (attempts == 0) return null;
+
+    return SyncMetrics(
+      peerId: peerId,
+      totalAttempts: attempts,
+      totalSuccess: success,
+      consecutiveFailures: failures,
+      successRate: success / attempts,
+      lastSuccessAt: lastSuccess,
+      lastFailureAt: lastFailure,
+      isCircuitOpen: _isCircuitOpen(peerId),
+    );
+  }
+
+  /// Get sync metrics for all peers.
+  Map<String, SyncMetrics> getAllMetrics() {
+    final metrics = <String, SyncMetrics>{};
+    for (final peerId in _totalSyncAttempts.keys) {
+      final peerMetrics = getMetricsForPeer(peerId);
+      if (peerMetrics != null) {
+        metrics[peerId] = peerMetrics;
+      }
+    }
+    return metrics;
+  }
+
+  /// Reset metrics for a peer.
+  void resetMetricsForPeer(String peerId) {
+    _failureCount.remove(peerId);
+    _lastFailure.remove(peerId);
+    _lastSuccess.remove(peerId);
+    _totalSyncAttempts.remove(peerId);
+    _totalSyncSuccess.remove(peerId);
+  }
 
   /// Dispose of all resources.
   ///
@@ -420,6 +492,54 @@ class SyncEngine<T extends SyncItem> {
   /// Clean up stale sync sessions.
   void _cleanupStaleSessions() {
     _coordinator.cleanupStaleSessions();
+  }
+
+  /// Handle peer tracker events for auto-reconnection.
+  Future<void> _handlePeerEvent(PeerEvent event) async {
+    switch (event.type) {
+      case PeerEventType.discovered:
+        _emitEvent(
+          SyncEngineEventType.peerDiscovered,
+          peerId: event.peer.deviceId,
+        );
+
+        // Auto-sync with newly discovered peer (if circuit is closed)
+        if (!_isCircuitOpen(event.peer.deviceId)) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          await syncWithPeer(event.peer.deviceId);
+        }
+        break;
+
+      case PeerEventType.updated:
+        // Check if this is a reconnection (peer was lost before)
+        final hadFailures = (_failureCount[event.peer.deviceId] ?? 0) > 0;
+        if (hadFailures) {
+          _emitEvent(
+            SyncEngineEventType.peerReconnected,
+            peerId: event.peer.deviceId,
+          );
+
+          // Reduce failure count on reconnection (peer might have recovered)
+          _failureCount[event.peer.deviceId] =
+              ((_failureCount[event.peer.deviceId]! / 2).floor()).clamp(0, 100);
+
+          if (_failureCount[event.peer.deviceId]! < 3) {
+            _emitEvent(
+              SyncEngineEventType.circuitBreakerReset,
+              peerId: event.peer.deviceId,
+            );
+          }
+
+          // Auto-sync on reconnection
+          await Future.delayed(const Duration(milliseconds: 500));
+          await syncWithPeer(event.peer.deviceId);
+        }
+        break;
+
+      case PeerEventType.lost:
+        _emitEvent(SyncEngineEventType.peerLost, peerId: event.peer.deviceId);
+        break;
+    }
   }
 
   /// Emit a sync engine event.
@@ -461,6 +581,56 @@ class SyncEngine<T extends SyncItem> {
         return SyncEngineEventType.itemBroadcast;
     }
   }
+
+  /// Check if circuit breaker is open for a peer.
+  ///
+  /// Circuit breaker opens after 3 consecutive failures and uses
+  /// exponential backoff: 1min, 2min, 4min, 8min, etc.
+  bool _isCircuitOpen(String peerId) {
+    final failures = _failureCount[peerId] ?? 0;
+    if (failures < 3) return false;
+
+    final lastFail = _lastFailure[peerId];
+    if (lastFail == null) return false;
+
+    // Exponential backoff: 60s * 2^(failures-3)
+    // failures=3: 60s, failures=4: 120s, failures=5: 240s, etc.
+    // Cap at 30 minutes
+    final backoffSeconds = (60 * (1 << (failures - 3))).clamp(60, 1800);
+    final backoffDuration = Duration(seconds: backoffSeconds);
+
+    final elapsed = DateTime.now().difference(lastFail);
+    return elapsed < backoffDuration;
+  }
+
+  /// Record a successful sync operation.
+  void _recordSuccess(String peerId) {
+    _failureCount.remove(peerId);
+    _lastSuccess[peerId] = DateTime.now();
+    _totalSyncSuccess[peerId] = (_totalSyncSuccess[peerId] ?? 0) + 1;
+
+    _emitEvent(SyncEngineEventType.syncCompleted, peerId: peerId);
+  }
+
+  /// Record a failed sync operation.
+  void _recordFailure(String peerId, String error) {
+    _failureCount[peerId] = (_failureCount[peerId] ?? 0) + 1;
+    _lastFailure[peerId] = DateTime.now();
+
+    final failures = _failureCount[peerId]!;
+
+    // Emit failure event
+    _emitEvent(SyncEngineEventType.syncFailed, peerId: peerId, error: error);
+
+    // Emit circuit breaker event if threshold reached
+    if (failures == 3) {
+      _emitEvent(
+        SyncEngineEventType.circuitBreakerOpened,
+        peerId: peerId,
+        error: 'Circuit breaker opened after 3 failures',
+      );
+    }
+  }
 }
 
 /// Sync engine event.
@@ -496,9 +666,44 @@ enum SyncEngineEventType {
   syncResponseSent,
   syncCompleted,
   syncFailed,
+  syncSkipped,
   conflictResolved,
   operationFailed,
   itemBroadcast,
   ackTimeout,
+  circuitBreakerOpened,
+  circuitBreakerReset,
+  peerDiscovered,
+  peerReconnected,
+  peerLost,
   error,
+}
+
+/// Sync metrics for a peer.
+class SyncMetrics {
+  final String peerId;
+  final int totalAttempts;
+  final int totalSuccess;
+  final int consecutiveFailures;
+  final double successRate;
+  final DateTime? lastSuccessAt;
+  final DateTime? lastFailureAt;
+  final bool isCircuitOpen;
+
+  const SyncMetrics({
+    required this.peerId,
+    required this.totalAttempts,
+    required this.totalSuccess,
+    required this.consecutiveFailures,
+    required this.successRate,
+    this.lastSuccessAt,
+    this.lastFailureAt,
+    required this.isCircuitOpen,
+  });
+
+  @override
+  String toString() {
+    return 'SyncMetrics($peerId: ${(successRate * 100).toStringAsFixed(1)}% success, '
+        '$consecutiveFailures consecutive failures, circuit ${isCircuitOpen ? "OPEN" : "closed"})';
+  }
 }

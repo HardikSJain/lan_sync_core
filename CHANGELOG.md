@@ -1,5 +1,85 @@
 # Changelog
 
+## 0.1.0-dev.5 (2026-03-26)
+
+### Phase 4B: Resilience & Error Recovery - Complete ✅
+
+Production-grade error recovery, circuit breaker, and auto-reconnection.
+
+#### Circuit Breaker Pattern
+
+Prevents hammering failing peers with exponential backoff:
+- Opens after 3 consecutive failures
+- Exponential backoff: 1min → 2min → 4min → 8min → ... (max 30min)
+- Auto-resets when peer recovers
+- Reduces failure count on reconnection
+
+#### Failure Tracking & Metrics
+
+Detailed per-peer metrics:
+- Total sync attempts
+- Total successful syncs
+- Consecutive failures
+- Success rate (%)
+- Last success timestamp
+- Last failure timestamp
+- Circuit breaker status
+
+API:
+```dart
+// Get metrics for peer
+final metrics = engine.getMetricsForPeer(peerId);
+print(metrics.successRate); // 0.0 - 1.0
+print(metrics.consecutiveFailures);
+print(metrics.isCircuitOpen);
+
+// Get all metrics
+final allMetrics = engine.getAllMetrics();
+
+// Reset metrics
+engine.resetMetricsForPeer(peerId);
+```
+
+#### Auto-Reconnection
+
+Automatic sync on peer discovery/reconnection:
+- New peer discovered → auto-sync after 500ms
+- Peer reconnected (after failures) → reduce failure count & auto-sync
+- Circuit breaker aware (won't sync if circuit open)
+- Graceful handling of transient failures
+
+#### Enhanced Events
+
+New event types:
+- `peerDiscovered` - New peer found on network
+- `peerReconnected` - Peer recovered after failures  
+- `peerLost` - Peer went offline
+- `syncSkipped` - Sync skipped (circuit breaker open)
+- `circuitBreakerOpened` - Circuit opened after 3 failures
+- `circuitBreakerReset` - Circuit reset (peer recovered)
+
+#### Resilience Features
+
+- ✅ Circuit breaker with exponential backoff
+- ✅ Detailed failure tracking
+- ✅ Success rate metrics
+- ✅ Auto-reconnection on peer recovery
+- ✅ Graceful degradation
+- ✅ Self-healing (failure count reduction on reconnection)
+
+#### Quality
+
+- Zero compilation errors ✅
+- Zero warnings ✅
+- Zero infos ✅
+- Production-grade resilience ✅
+
+### Breaking Changes
+
+None (development release)
+
+---
+
 ## 0.1.0-dev.4 (2026-03-26)
 
 ### Phase 4A: Core Integration - Complete ✅
