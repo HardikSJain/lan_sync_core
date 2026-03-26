@@ -11,6 +11,7 @@ import '../network/message_envelope.dart';
 import '../network/message_type.dart';
 import '../network/udp_transport.dart';
 import 'conflict_resolver.dart';
+import 'cursor_storage.dart';
 import 'sync_messages.dart';
 
 /// Coordinates synchronization flows between devices.
@@ -58,6 +59,7 @@ class SyncCoordinator<T extends SyncItem> {
   final ConflictResolver<T> conflictResolver;
   final DeviceIdentityProvider deviceIdentity;
   final PeerTracker peerTracker;
+  final CursorStorageAdapter cursorStorage;
 
   /// Active sync sessions (peer device ID → sync state)
   final Map<String, _SyncSession> _activeSessions = {};
@@ -80,6 +82,7 @@ class SyncCoordinator<T extends SyncItem> {
     required this.conflictResolver,
     required this.deviceIdentity,
     required this.peerTracker,
+    required this.cursorStorage,
   });
 
   /// Initiate sync with a peer.
@@ -399,15 +402,12 @@ class SyncCoordinator<T extends SyncItem> {
 
   /// Get cursor for a specific peer.
   Future<int> _getCursorForPeer(String peerId) async {
-    // In a real implementation, this would be persisted per-peer
-    // For now, return 0 for full sync
-    return 0;
+    return cursorStorage.getCursorForPeer(peerId);
   }
 
   /// Update cursor for a specific peer.
   Future<void> _updateCursorForPeer(String peerId, int cursor) async {
-    // In a real implementation, persist the cursor per-peer
-    // For now, just track in memory
+    return cursorStorage.updateCursorForPeer(peerId, cursor);
   }
 
   /// Get our device ID.
