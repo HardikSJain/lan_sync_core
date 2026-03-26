@@ -72,4 +72,11 @@ export 'src/monitoring/peer_tracker.dart';
 export 'src/monitoring/rate_limiter.dart';
 export 'src/monitoring/network_health_monitor.dart';
 
-// Sync engine will be exported as it's implemented (Phase 3)
+// Sync coordination (Phase 3)
+export 'src/sync/conflict_resolver.dart';
+export 'src/sync/sync_coordinator.dart';
+export 'src/sync/sync_messages.dart';
+
+// Default implementations
+export 'src/defaults/file_device_identity.dart';
+export 'src/defaults/file_op_log.dart';

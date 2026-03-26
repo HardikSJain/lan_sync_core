@@ -1,5 +1,66 @@
 # Changelog
 
+## 0.1.0-dev.3 (2026-03-26)
+
+### Phase 3: Sync Coordination - Core Implementation
+
+Implemented core synchronization orchestration layer.
+
+#### Sync Coordination
+
+- **SyncCoordinator**: State machine for sync flows
+  - Full sync and incremental sync
+  - Concurrent session management
+  - Incoming/outgoing sync request/response handling
+  - Conflict resolution integration
+  - Item broadcast to peers
+  - Event emission for monitoring
+
+- **Conflict Resolution**:
+  - ConflictResolver abstract base
+  - LastWriteWinsResolver (timestamp + device ID tiebreaker)
+  - CustomConflictResolver (user-defined logic)
+  - ConflictLog for debugging
+
+- **Sync Messages**:
+  - SyncRequest (cursor-based)
+  - SyncResponse (operations payload)
+  - ItemUpsertedMessage (broadcast changes)
+  - SyncCompleteMessage (completion notification)
+
+#### Default Implementations
+
+- **FileDeviceIdentity**: UUID-based device ID
+  - Persistent file storage
+  - Platform-specific device names
+  - Stable across restarts
+
+- **FileOpLog**: NDJSON operation log
+  - Append-only writes
+  - Thread-safe (synchronized)
+  - Cursor-based reads
+  - Deduplication
+  - Optional compaction
+
+#### Dependencies Added
+
+- uuid ^4.0.0
+- synchronized ^3.1.0
+- collection ^1.18.0
+
+#### Quality
+
+- Zero compilation errors
+- Clean analysis
+- Comprehensive dartdoc
+- Production-ready error handling
+
+### Breaking Changes
+
+None (development release)
+
+---
+
 ## 0.1.0-dev.2 (2026-03-26)
 
 ### Phase 2: Network Layer - Complete
