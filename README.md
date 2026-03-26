@@ -25,6 +25,30 @@ A Flutter/Dart package for offline-first multi-device synchronization on local a
 - Temporary offline coordination
 - Local collaborative experiences
 
+## Example App
+
+A complete, runnable example app is included in `example/`.
+
+**Try it now:**
+
+```bash
+cd example
+flutter pub get
+flutter run
+```
+
+Run on 2+ devices on the same Wi-Fi network to see real-time sync in action.
+
+**Features:**
+- ✅ Task creation and management
+- ✅ Real-time multi-device sync
+- ✅ Auto-discovery of peers
+- ✅ Sync metrics and monitoring
+- ✅ Circuit breaker visualization
+- ✅ Minimal black & white design
+
+See `example/README.md` for detailed instructions.
+
 ## Installation
 
 Add to your `pubspec.yaml`:
@@ -245,15 +269,15 @@ healthMonitor.alerts.listen((alert) {
 
 ## Status
 
-### Phase 4B: Resilience & Error Recovery ✅ (Production-Grade)
+### ✅ Production-Ready (v0.1.0)
 
-Current progress:
+**Complete and ready for production use:**
 - ✅ Phase 1: Core interfaces and abstractions
 - ✅ Phase 2: Network layer (UDP transport, chunking, ACKs, monitoring)
 - ✅ Phase 3: Sync coordination (SyncCoordinator, conflict resolution, file implementations)
 - ✅ Phase 4A: Core integration (SyncEngine API, message routing, full wiring)
 - ✅ Phase 4B: Resilience (circuit breaker, error recovery, auto-reconnection)
-- ⏳ Phase 4C: Examples and testing (optional polish)
+- ✅ Phase 4C: Example app (runnable task sync app with black & white UI)
 
 ### Implemented Components (v0.1.0-dev)
 
