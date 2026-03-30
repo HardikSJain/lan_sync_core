@@ -62,4 +62,26 @@ export 'src/network/message_type.dart';
 export 'src/network/message_envelope.dart';
 export 'src/network/message_protocol.dart';
 
-// Sync engine and transport layer will be exported as they're implemented
+// Network layer
+export 'src/network/udp_transport.dart';
+export 'src/network/chunk_manager.dart';
+export 'src/network/ack_tracker.dart';
+
+// Monitoring
+export 'src/monitoring/peer_tracker.dart';
+export 'src/monitoring/rate_limiter.dart';
+export 'src/monitoring/network_health_monitor.dart';
+
+// Sync coordination (Phase 3)
+export 'src/sync/conflict_resolver.dart';
+export 'src/sync/sync_coordinator.dart';
+export 'src/sync/sync_messages.dart';
+export 'src/sync/cursor_storage.dart';
+export 'src/sync/message_router.dart';
+
+// Sync engine (Phase 4A - High-level API)
+export 'src/sync/sync_engine.dart';
+
+// Default implementations
+export 'src/defaults/file_device_identity.dart';
+export 'src/defaults/file_op_log.dart';

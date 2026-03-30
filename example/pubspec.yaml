@@ -1,0 +1,25 @@
+name: lan_sync_example
+description: Minimal example app demonstrating lan_sync_core usage
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: ^3.11.1
+  flutter: '>=3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  lan_sync_core:
+    path: ../
+  
+  uuid: ^4.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
